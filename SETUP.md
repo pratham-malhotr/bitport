@@ -1,289 +1,177 @@
-# BitPort - Setup Guide
+# BitPort - How to Run Locally
 
-## Quick Start
+Easy setup guide! You need Node.js and MySQL installed.
 
-### Prerequisites
-- Node.js (v14+)
-- MySQL (v5.7+)
-- Git
+## Prerequisites
+- Node.js (download from https://nodejs.org)
+- MySQL (download from https://dev.mysql.com/downloads/mysql/)
 
 ---
 
-## Backend Setup
+## Step 1: Setup Backend
 
-### 1. Navigate to Backend Directory
+### Open Terminal and go to backend folder
 ```bash
 cd backend
 ```
 
-### 2. Install Dependencies
+### Install packages
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-Create a `.env` file in the backend directory:
-```env
+### Create `.env` file in backend folder
+Create a new file called `.env` with this content:
+```
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=your_password
+DB_PASSWORD=your_mysql_password
 DB_NAME=bitport
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+JWT_SECRET=mysecretkey123
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 ```
 
-### 4. Create MySQL Database and Tables
-```bash
-mysql -u root -p < config/schema.sql
-```
+Replace `your_mysql_password` with your actual MySQL password.
 
-Or manually create the database:
+### Create the database
+Open your MySQL terminal and run:
 ```sql
 mysql -u root -p
 
 CREATE DATABASE bitport;
 USE bitport;
 
--- Then paste the content from config/schema.sql
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  from_currency VARCHAR(50) NOT NULL,
+  to_currency VARCHAR(50) NOT NULL,
+  amount DECIMAL(18, 8) NOT NULL,
+  result_amount DECIMAL(18, 8) NOT NULL,
+  price DECIMAL(18, 8) NOT NULL,
+  status VARCHAR(50) DEFAULT 'completed',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 ```
 
-### 5. Start Backend Server
+### Start Backend Server
 ```bash
 npm start
 ```
-or with auto-reload:
-```bash
-npm run dev
-```
 
-Backend will run on: `http://localhost:5000`
+You should see: `Server running on port 5000`
 
 ---
 
-## Frontend Setup
+## Step 2: Setup Frontend (New Terminal)
 
-### 1. Navigate to Frontend Directory (New Terminal)
+### Open a NEW terminal and go to frontend folder
 ```bash
 cd frontend
 ```
 
-### 2. Install Dependencies
+### Install packages
 ```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-Create a `.env` file in the frontend directory:
-```env
+### Create `.env` file in frontend folder
+Create a new file called `.env` with this:
+```
 REACT_APP_API_URL=http://localhost:5000/api
 ```
 
-### 4. Start Frontend Dev Server
+### Start Frontend
 ```bash
 npm start
 ```
 
-Frontend will run on: `http://localhost:3000`
+It will open automatically in your browser at `http://localhost:3000`
 
 ---
 
-## Testing the Application
+## Now Test It!
 
-### 1. Register a New User
-- Go to `http://localhost:3000/register`
-- Fill in the form and submit
+### 1. Register
+- Click "Register"
+- Fill in your name, email, password
+- Click "Register"
 
 ### 2. Login
-- Go to `http://localhost:3000/login`
-- Enter your credentials
+- Click "Login"
+- Use your email and password
+- Click "Login"
 
-### 3. Make a Swap
-- Go to `http://localhost:3000/swap`
-- Select currencies and amount
+### 3. Swap
+- Click "Swap"
+- Select two currencies (like Bitcoin → Ethereum)
+- Enter amount
 - Click "Swap Now"
 
 ### 4. View History
-- Go to `http://localhost:3000/history`
-- Search, filter, and sort transactions
-- Delete transactions if needed
+- Click "History"
+- See all your swaps
+- You can delete them
 
-### 5. View Profile
-- Go to `http://localhost:3000/profile`
-- See your account information
+### 5. Profile
+- Click "Profile"
+- See your information
 
 ---
 
-## API Testing with Curl
+## If Something Breaks
 
-### Register
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "password": "password123"
-  }'
-```
+**Port 5000 or 3000 already in use?**
+- Close other apps using those ports
+- Or change PORT in backend/.env
 
-### Login
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john@example.com",
-    "password": "password123"
-  }'
-```
+**MySQL not running?**
+- Start MySQL service
 
-### Get Profile (Replace TOKEN with actual token from login)
-```bash
-curl -X GET http://localhost:5000/api/auth/profile \
-  -H "Authorization: Bearer TOKEN"
-```
+**Can't connect to database?**
+- Check your password in `.env` is correct
+- Make sure MySQL is running
+- Make sure database `bitport` exists
 
-### Create Swap
-```bash
-curl -X POST http://localhost:5000/api/swap/swap \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer TOKEN" \
-  -d '{
-    "fromCurrency": "bitcoin",
-    "toCurrency": "ethereum",
-    "amount": 1
-  }'
-```
+**Frontend shows error?**
+- Check backend is running on port 5000
+- Check browser console (F12) for errors
+- Restart npm start
 
-### Get Transaction History
+---
+
+## How to Push Changes to GitHub
+
 ```bash
-curl -X GET "http://localhost:5000/api/swap/history?page=1&limit=10&sort=created_at&order=DESC" \
-  -H "Authorization: Bearer TOKEN"
+git add .
+git commit -m "Your message here"
+git push origin main
 ```
 
 ---
 
-## Troubleshooting
+## Files Explained
 
-### Port Already in Use
-**Backend (Port 5000):**
-```bash
-lsof -i :5000
-kill -9 <PID>
-```
-
-**Frontend (Port 3000):**
-```bash
-lsof -i :3000
-kill -9 <PID>
-```
-
-### MySQL Connection Error
-- Verify MySQL is running: `mysql -u root -p`
-- Check credentials in `.env` file
-- Ensure database `bitport` exists
-
-### Frontend can't connect to backend
-- Check if backend is running on port 5000
-- Verify `REACT_APP_API_URL` in frontend `.env`
-- Check CORS settings in `backend/server.js`
-- Check browser console for detailed errors
-
-### Dependencies Installation Error
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Remove node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-```
-
----
-
-## Database Schema
-
-The database is created automatically when you run:
-```bash
-mysql -u root -p < config/schema.sql
-```
-
-**Tables Created:**
-- `users` - Stores user accounts
-- `transactions` - Stores crypto swap transactions
-
----
-
-## Project Structure
-
-```
-bitport/
-├── backend/
-│   ├── config/
-│   │   ├── database.js
-│   │   └── schema.sql
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   └── swapController.js
-│   ├── middleware/
-│   │   └── auth.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   └── swapRoutes.js
-│   ├── .env
-│   ├── package.json
-│   └── server.js
-├── frontend/
-│   ├── public/
-│   │   └── index.html
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.js
-│   │   │   └── Footer.js
-│   │   ├── pages/
-│   │   │   ├── Home.js
-│   │   │   ├── Login.js
-│   │   │   ├── Register.js
-│   │   │   ├── Swap.js
-│   │   │   ├── History.js
-│   │   │   └── Profile.js
-│   │   ├── styles/
-│   │   │   ├── Navbar.css
-│   │   │   ├── Footer.css
-│   │   │   └── pages.css
-│   │   ├── utils/
-│   │   │   ├── api.js
-│   │   │   ├── auth.js
-│   │   │   └── ProtectedRoute.js
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── .env
-│   └── package.json
-├── .gitignore
-└── README.md
-```
-
----
-
-## Next Steps for Production
-
-1. **Deploy Frontend to Vercel**
-   - Push code to GitHub
-   - Connect repository to Vercel
-   - Set environment variables
-
-2. **Deploy Backend to Render**
-   - Push code to GitHub
-   - Create new Web Service on Render
-   - Configure environment variables and database
-
-3. **Set up MySQL Database**
-   - Use AWS RDS, PlanetScale, or Railway
-   - Update `DB_HOST`, `DB_USER`, `DB_PASSWORD` in production `.env`
+- `backend/server.js` - Main backend file
+- `backend/controllers/` - Login, signup, swap logic
+- `backend/routes/` - API endpoints
+- `frontend/src/pages/` - Home, Login, Register, Swap, History, Profile pages
+- `frontend/src/styles/` - CSS for all pages
+- `frontend/src/utils/api.js` - Connects frontend to backend
 
 ---
 
 ## Support
 
-For issues or questions, check the main README.md or open an issue on GitHub.
+Check the errors in the terminal. Google the error message. That's how real developers work!
